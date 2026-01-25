@@ -31,41 +31,5 @@ export const MOCK_ADMIN: User = {
   address: 'GHMC Head Office'
 };
 
-export const INITIAL_COMPLAINTS: Complaint[] = [
-  {
-    id: 'TKN-8821',
-    userId: 'u2',
-    imageUrl: 'https://picsum.photos/800/600?random=1',
-    latitude: 17.3850,
-    longitude: 78.4867,
-    status: ComplaintStatus.AUTO_VERIFIED,
-    severity: Severity.HIGH,
-    description: 'Deep pothole near Charminar main road.',
-    timestamp: new Date(Date.now() - 3600000), // 1 hour ago
-    address: 'Charminar Rd, Hyderabad'
-  },
-  {
-    id: 'TKN-8822',
-    userId: 'u3',
-    imageUrl: 'https://picsum.photos/800/600?random=2',
-    latitude: 17.4401,
-    longitude: 78.3489,
-    status: ComplaintStatus.WAITING_LIST,
-    severity: Severity.MEDIUM,
-    description: 'Uneven road surface causing slow traffic.',
-    timestamp: new Date(Date.now() - 7200000), // 2 hours ago
-    address: 'Gachibowli, Hyderabad'
-  },
-  {
-    id: 'TKN-8823',
-    userId: 'u1',
-    imageUrl: 'https://picsum.photos/800/600?random=3',
-    latitude: 17.4114,
-    longitude: 78.5322,
-    status: ComplaintStatus.REPAIRED,
-    severity: Severity.LOW,
-    description: 'Minor crack on pavement.',
-    timestamp: new Date(Date.now() - 86400000), // 1 day ago
-    address: 'Tarnaka, Secunderabad'
-  }
-];
+// Start with an empty list for production-like behavior
+export const INITIAL_COMPLAINTS: Complaint[] = [];

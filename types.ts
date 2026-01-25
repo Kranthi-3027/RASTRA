@@ -4,12 +4,12 @@ export enum UserRole {
 }
 
 export enum ComplaintStatus {
-  SUBMITTED = 'Submitted',
-  AUTO_VERIFIED = 'Auto-Verified',
+  SUBMITTED = 'Uploaded',
+  AUTO_VERIFIED = 'Verified',
   WAITING_LIST = 'Waiting List',
-  ASSIGNED = 'Assigned',
+  ASSIGNED = 'Workers Assigned',
   REPAIRED = 'Repaired',
-  IGNORED = 'Ignored'
+  IGNORED = 'Rejected'
 }
 
 export enum Severity {
@@ -26,6 +26,7 @@ export interface Complaint {
   longitude: number;
   status: ComplaintStatus;
   severity: Severity;
+  severityScore: number;
   description?: string;
   timestamp: Date;
   address: string;
@@ -46,4 +47,20 @@ export interface StatCardProps {
   value: number;
   icon: React.ReactNode;
   color: string;
+}
+
+// --- ADMIN AUDIT TYPES ---
+export type AdminActivityType = 'LOGIN' | 'LOGOUT' | 'REPAIR_ORDER' | 'DELETE_CASE';
+
+export interface AdminLog {
+  id: string;
+  type: AdminActivityType;
+  timestamp: Date;
+  details?: string;
+}
+
+export interface AdminStats {
+  totalRepairOrders: number;
+  totalDeletedCases: number;
+  logs: AdminLog[];
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, Logo } from '../components/UI.tsx';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../types';
+import { api } from '../services/mockApi.ts';
 
 interface LoginProps {
   onLogin: (role: UserRole) => void;
@@ -11,9 +12,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     // Simulate auth flow
     const role = isAdmin ? UserRole.ADMIN : UserRole.USER;
+    
+    if (isAdmin) {
+       await api.logAdminActivity('LOGIN', 'Admin Console Access');
+    }
+
     onLogin(role);
     navigate(isAdmin ? '/admin/dashboard' : '/user/home');
   };
@@ -56,8 +62,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div className="w-full space-y-4">
             {isAdmin ? (
                <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleGoogleLogin(); }}>
-                  <input type="email" placeholder="Admin Email" className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-rastha-primary focus:outline-none" />
-                  <input type="password" placeholder="Password" className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-rastha-primary focus:outline-none" />
+                  <input 
+                    type="email" 
+                    placeholder="Admin Email" 
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 text-black placeholder-gray-500 bg-white focus:ring-2 focus:ring-rastha-primary focus:outline-none transition-colors" 
+                  />
+                  <input 
+                    type="password" 
+                    placeholder="Password" 
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 text-black placeholder-gray-500 bg-white focus:ring-2 focus:ring-rastha-primary focus:outline-none transition-colors" 
+                  />
                   <Button type="submit" className="w-full py-3">Login as Admin</Button>
                </form>
             ) : (

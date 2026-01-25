@@ -5,24 +5,36 @@ import UserHome from './pages/UserHome';
 import ReportDamage from './pages/ReportDamage';
 import ComplaintStatusPage from './pages/ComplaintStatus';
 import SettingsPage from './pages/Settings';
-import AdminDashboard from './pages/AdminDashboard';
-import { BottomNav, AdminHeader } from './components/UI.tsx';
+import AdminDashboard, { AdminAudit, AdminDataCenter } from './pages/AdminDashboard';
+import { BottomNav, SideNav, AdminSideNav, AdminMobileHeader } from './components/UI.tsx';
 import Chatbot from './components/Chatbot';
 import { UserRole } from './types';
+import { MOCK_ADMIN } from './constants';
+import { api } from './services/mockApi.ts';
 
 // Layouts
-const UserLayout = () => (
-  <div className="min-h-screen bg-gray-50 text-gray-900 pb-20 dark:bg-gray-900 dark:text-white">
-    <Outlet />
+const UserLayout = ({ onLogout }: { onLogout: () => void }) => (
+  <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white flex">
+    <SideNav onLogout={onLogout} />
+    <main className="flex-1 pb-20 md:pb-0 md:pl-64 min-h-screen transition-all">
+      <div className="h-full overflow-y-auto">
+        <Outlet />
+      </div>
+    </main>
     <Chatbot />
     <BottomNav />
   </div>
 );
 
 const AdminLayout = ({ onLogout }: { onLogout: () => void }) => (
-  <div className="min-h-screen bg-gray-50 text-gray-900">
-    <AdminHeader onLogout={onLogout} />
-    <Outlet />
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white flex">
+    <AdminSideNav onLogout={onLogout} />
+    <main className="flex-1 md:pl-64 min-h-screen transition-all flex flex-col">
+       <AdminMobileHeader onLogout={onLogout} />
+       <div className="flex-1 overflow-y-auto">
+         <Outlet />
+       </div>
+    </main>
   </div>
 );
 
@@ -34,6 +46,9 @@ const App = () => {
   };
 
   const handleLogout = () => {
+    if (userRole === UserRole.ADMIN) {
+        api.logAdminActivity('LOGOUT', 'Admin Session Ended');
+    }
     setUserRole(null);
   };
 
@@ -48,7 +63,7 @@ const App = () => {
         />
 
         {/* User Routes */}
-        <Route path="/user" element={userRole === UserRole.USER ? <UserLayout /> : <Navigate to="/login" replace />}>
+        <Route path="/user" element={userRole === UserRole.USER ? <UserLayout onLogout={handleLogout} /> : <Navigate to="/login" replace />}>
           <Route path="home" element={<UserHome />} />
           <Route path="report" element={<ReportDamage />} />
           <Route path="status" element={<ComplaintStatusPage />} />
@@ -58,6 +73,9 @@ const App = () => {
         {/* Admin Routes */}
         <Route path="/admin" element={userRole === UserRole.ADMIN ? <AdminLayout onLogout={handleLogout} /> : <Navigate to="/login" replace />}>
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="audit" element={<AdminAudit />} />
+          <Route path="data" element={<AdminDataCenter />} />
+          <Route path="settings" element={<SettingsPage onLogout={handleLogout} user={MOCK_ADMIN} />} />
         </Route>
 
       </Routes>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, PlusCircle, User as UserIcon, Settings, MapPin, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Home, PlusCircle, User as UserIcon, Settings, MapPin, AlertTriangle, CheckCircle, Clock, BarChart3, LayoutDashboard, FileText, Users, LogOut, Menu, Shield, Database } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { COLORS } from '../constants';
 import { ComplaintStatus, Severity } from '../types';
@@ -101,7 +101,7 @@ export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', c
     primary: "bg-rastha-primary text-white hover:bg-opacity-90 shadow-md",
     secondary: "bg-rastha-secondary text-rastha-primary hover:bg-opacity-90 shadow-md",
     outline: "border-2 border-rastha-primary text-rastha-primary hover:bg-rastha-primary hover:text-white",
-    ghost: "bg-transparent text-gray-600 hover:bg-gray-100",
+    ghost: "bg-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
     danger: "bg-rastha-alert text-white hover:bg-opacity-90",
     white: "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 shadow-sm"
   };
@@ -116,12 +116,12 @@ export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', c
 // --- BADGE ---
 export const StatusBadge: React.FC<{ status: ComplaintStatus }> = ({ status }) => {
   const styles = {
-    [ComplaintStatus.SUBMITTED]: "bg-blue-100 text-blue-800",
-    [ComplaintStatus.AUTO_VERIFIED]: "bg-green-100 text-green-800 border border-green-200",
-    [ComplaintStatus.WAITING_LIST]: "bg-yellow-100 text-yellow-800",
-    [ComplaintStatus.ASSIGNED]: "bg-purple-100 text-purple-800",
+    [ComplaintStatus.SUBMITTED]: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    [ComplaintStatus.AUTO_VERIFIED]: "bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
+    [ComplaintStatus.WAITING_LIST]: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+    [ComplaintStatus.ASSIGNED]: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
     [ComplaintStatus.REPAIRED]: "bg-rastha-secondary text-rastha-primary font-bold",
-    [ComplaintStatus.IGNORED]: "bg-gray-200 text-gray-600",
+    [ComplaintStatus.IGNORED]: "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400",
   };
 
   return (
@@ -135,7 +135,7 @@ export const SeverityBadge: React.FC<{ severity: Severity }> = ({ severity }) =>
   const styles = {
     [Severity.HIGH]: "bg-rastha-alert text-white",
     [Severity.MEDIUM]: "bg-rastha-warning text-gray-900",
-    [Severity.LOW]: "bg-gray-300 text-gray-700",
+    [Severity.LOW]: "bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
   };
   return (
     <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${styles[severity]}`}>
@@ -157,7 +157,141 @@ export const Card: React.FC<CardProps> = ({ children, className = '', ...props }
   );
 };
 
-// --- BOTTOM NAV (USER) ---
+// --- SIDE NAV (USER) ---
+export const SideNav = ({ onLogout }: { onLogout: () => void }) => {
+  const navItems = [
+    { icon: <Home size={20} />, label: "Home", to: "/user/home" },
+    { icon: <PlusCircle size={20} />, label: "Report Damage", to: "/user/report" },
+    { icon: <Clock size={20} />, label: "Status Track", to: "/user/status" },
+  ];
+
+  return (
+    <aside className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-40">
+      <div className="h-20 flex items-center px-6 border-b border-gray-100 dark:border-gray-800">
+         <Logo layout="horizontal" className="h-8" />
+      </div>
+      
+      {/* Main Nav Items */}
+      <nav className="flex-1 py-6 px-3 space-y-1">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.label}
+            to={item.to}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                isActive 
+                  ? "bg-rastha-primary/10 text-rastha-primary dark:bg-rastha-primary/20 dark:text-rastha-secondary" 
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900"
+              }`
+            }
+          >
+            {item.icon}
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Bottom Section: Settings & Logout */}
+      <div className="p-3 border-t border-gray-100 dark:border-gray-800 space-y-1">
+         <NavLink
+            to="/user/settings"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                isActive 
+                  ? "bg-rastha-primary/10 text-rastha-primary dark:bg-rastha-primary/20 dark:text-rastha-secondary" 
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900"
+              }`
+            }
+          >
+            <Settings size={20} />
+            Settings
+          </NavLink>
+
+         <button 
+           onClick={onLogout}
+           className="flex items-center gap-3 w-full px-3 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm font-medium"
+         >
+             <LogOut size={20} />
+             Logout
+         </button>
+      </div>
+    </aside>
+  );
+};
+
+// --- SIDE NAV (ADMIN) ---
+export const AdminSideNav = ({ onLogout }: { onLogout: () => void }) => {
+    const navItems = [
+      { icon: <LayoutDashboard size={20} />, label: "Dashboard", to: "/admin/dashboard" },
+      { icon: <Shield size={20} />, label: "Activity Audit", to: "/admin/audit" },
+      { icon: <Database size={20} />, label: "Data Center", to: "/admin/data" },
+    ];
+  
+    return (
+      <aside className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-40">
+        <div className="h-20 flex items-center px-6 border-b border-gray-100 dark:border-gray-800 bg-rastha-primary">
+           <Logo layout="horizontal" className="h-8" variant="light" />
+        </div>
+        
+        <div className="px-6 py-6 border-b border-gray-100 dark:border-gray-800">
+             <div className="bg-rastha-primary/5 rounded-xl p-3 flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-lg bg-rastha-primary flex items-center justify-center text-white">
+                     <Shield size={16} />
+                 </div>
+                 <div>
+                     <p className="text-xs font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wide">Admin Console</p>
+                 </div>
+             </div>
+        </div>
+
+        <nav className="flex-1 py-6 px-3 space-y-1">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.label}
+              to={item.to}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  isActive 
+                    ? "bg-rastha-primary/10 text-rastha-primary dark:bg-rastha-primary/20 dark:text-rastha-secondary" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900"
+                }`
+              }
+            >
+              {item.icon}
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+  
+        {/* Bottom Section: Settings & Logout */}
+        <div className="p-3 border-t border-gray-100 dark:border-gray-800 space-y-1">
+           <NavLink
+              to="/admin/settings"
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  isActive 
+                    ? "bg-rastha-primary/10 text-rastha-primary dark:bg-rastha-primary/20 dark:text-rastha-secondary" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900"
+                }`
+              }
+            >
+              <Settings size={20} />
+              Settings
+            </NavLink>
+            
+           <button 
+             onClick={onLogout}
+             className="flex items-center gap-3 w-full px-3 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm font-medium"
+           >
+               <LogOut size={20} />
+               Logout System
+           </button>
+        </div>
+      </aside>
+    );
+  };
+
+// --- BOTTOM NAV (MOBILE) ---
 export const BottomNav = () => {
   const navItems = [
     { icon: <Home size={24} />, label: "Home", to: "/user/home" },
@@ -167,7 +301,7 @@ export const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => (
           <NavLink
@@ -188,25 +322,22 @@ export const BottomNav = () => {
   );
 };
 
-// --- ADMIN SIDEBAR / HEADER ---
-export const AdminHeader: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+// --- ADMIN MOBILE HEADER ---
+export const AdminMobileHeader: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   return (
-    <header className="bg-rastha-primary text-white h-16 flex items-center justify-between px-6 shadow-md sticky top-0 z-50">
+    <header className="md:hidden bg-rastha-primary text-white h-16 flex items-center justify-between px-4 shadow-md sticky top-0 z-50">
       <div className="flex items-center gap-3">
         <div className="bg-white/10 p-1 rounded-lg backdrop-blur-sm">
-           <Logo className="h-8" variant="light" showText={false} />
+           <Logo className="h-6" variant="light" showText={false} />
         </div>
-        <span className="text-white font-bold text-lg tracking-tight">RASHTRA <span className="opacity-70 font-light text-sm">Admin</span></span>
+        <span className="text-white font-bold text-lg tracking-tight">RASHTRA <span className="opacity-70 font-light text-xs">Admin</span></span>
       </div>
-      <div className="flex items-center gap-4">
-        <span className="text-sm opacity-80 hidden md:block">Municipal Admin</span>
-        <button 
-          className="px-4 py-2 rounded-lg font-medium transition-colors text-white hover:bg-white/20 active:bg-white/30 border border-white/20 shadow-sm"
-          onClick={onLogout}
-        >
-          Logout
-        </button>
-      </div>
+      <button 
+        className="p-2 text-white/80 hover:text-white"
+        onClick={onLogout}
+      >
+        <LogOut size={20} />
+      </button>
     </header>
   );
 };

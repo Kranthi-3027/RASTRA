@@ -1,7 +1,14 @@
+import React from 'react';
+
 export enum UserRole {
   USER = 'USER',
-  ADMIN = 'ADMIN'
+  ADMIN = 'ADMIN',
+  ENGINEERING = 'ENGINEERING',
+  TRAFFIC = 'TRAFFIC',
+  WARD_OFFICE = 'WARD_OFFICE'
 }
+
+export type DepartmentType = 'Engineering' | 'Traffic' | 'Ward' | 'Water' | 'Drainage' | 'Electricity' | 'Telecom';
 
 export enum ComplaintStatus {
   SUBMITTED = 'Uploaded',
@@ -18,6 +25,22 @@ export enum Severity {
   LOW = 'Low'
 }
 
+export interface Comment {
+  id: string;
+  userId: string;
+  userName: string;
+  text: string;
+  timestamp: Date;
+  avatarUrl?: string;
+}
+
+export interface ReportStats {
+  duplicate: number;
+  fake: number;
+  fixed: number;
+  wrongLocation: number;
+}
+
 export interface Complaint {
   id: string;
   userId: string;
@@ -30,6 +53,11 @@ export interface Complaint {
   description?: string;
   timestamp: Date;
   address: string;
+  departments: DepartmentType[];
+  comments: Comment[];
+  concernCount: number;
+  hasRaisedConcern: boolean;
+  reportStats: ReportStats;
 }
 
 export interface User {

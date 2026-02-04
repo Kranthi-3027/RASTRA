@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/mockApi.ts';
 import { MOCK_USER } from '../constants';
-import { Complaint } from '../types';
-import { Card, StatusBadge, SeverityBadge, Button } from '../components/UI.tsx';
-import { ChevronRight, X, Trash2, MapPin, AlertTriangle, Calendar } from 'lucide-react';
+import { Complaint, ComplaintStatus } from '../types';
+import { Card, StatusBadge, SeverityBadge, Button, useNavigate } from '../components/UI.tsx';
+import { ChevronRight, X, Trash2, MapPin, Calendar, Lock } from 'lucide-react';
 
 const ComplaintStatusPage = () => {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const fetchComplaints = async () => {
     const data = await api.getUserComplaints(MOCK_USER.id);
@@ -19,28 +20,57 @@ const ComplaintStatusPage = () => {
     fetchComplaints();
   }, []);
 
+  const sortedComplaints = useMemo(() => {
+      return [...complaints].sort((a, b) => {
+          const isARepaired = a.status === ComplaintStatus.REPAIRED;
+          const isBRepaired = b.status === ComplaintStatus.REPAIRED;
+          
+          if (isARepaired && !isBRepaired) return 1;
+          if (!isARepaired && isBRepaired) return -1;
+          
+          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      });
+  }, [complaints]);
+
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this complaint? This action cannot be undone.')) {
         setLoading(true);
-        await api.deleteComplaint(id);
-        setSelectedComplaint(null);
-        await fetchComplaints();
-        setLoading(false);
+        try {
+            await api.deleteComplaint(id);
+            setSelectedComplaint(null);
+            await fetchComplaints();
+        } catch (error) {
+            console.error("Delete failed", error);
+            alert("Failed to delete complaint. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     }
+  };
+
+  // Check if complaint is locked (Assigned or Repaired)
+  const isComplaintLocked = (status: ComplaintStatus) => {
+    return status === ComplaintStatus.ASSIGNED || status === ComplaintStatus.REPAIRED;
   };
 
   return (
     <div className="pb-20 md:pb-8 pt-6 md:pt-8 px-4 md:px-8 max-w-7xl mx-auto">
       <h1 className="text-2xl md:text-3xl font-bold text-rastha-primary dark:text-white mb-6">My Complaints</h1>
       
-      {complaints.length === 0 ? (
+      {sortedComplaints.length === 0 ? (
         <div className="text-center text-gray-500 dark:text-gray-400 py-10 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
           <p>No complaints reported yet.</p>
-          <Button variant="ghost" className="mt-4 text-rastha-primary">Start a Report</Button>
+          <Button 
+            variant="ghost" 
+            className="mt-4 text-rastha-primary"
+            onClick={() => navigate('/user/report')}
+          >
+            Start a Report
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-          {complaints.map(c => (
+          {sortedComplaints.map(c => (
             <Card 
               key={c.id} 
               className="flex p-4 items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer group hover:shadow-md border border-gray-100 dark:border-gray-700"
@@ -118,15 +148,25 @@ const ComplaintStatusPage = () => {
 
              {/* Modal Footer */}
              <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 pb-safe">
-                <Button 
-                  variant="danger" 
-                  className="w-full flex items-center justify-center gap-2 py-3.5 shadow-lg shadow-red-100 dark:shadow-none"
-                  onClick={() => handleDelete(selectedComplaint.id)}
-                  isLoading={loading}
-                >
-                   <Trash2 size={18} /> 
-                   Delete Complaint
-                </Button>
+                {isComplaintLocked(selectedComplaint.status) ? (
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-xl border border-blue-100 dark:border-blue-800">
+                        <Lock size={20} />
+                        <div className="text-xs">
+                            <p className="font-bold">Deletion Locked</p>
+                            <p>Cannot delete complaint while it is being processed or repaired.</p>
+                        </div>
+                    </div>
+                ) : (
+                    <Button 
+                    variant="danger" 
+                    className="w-full flex items-center justify-center gap-2 py-3.5 shadow-lg shadow-red-100 dark:shadow-none"
+                    onClick={() => handleDelete(selectedComplaint.id)}
+                    isLoading={loading}
+                    >
+                    <Trash2 size={18} /> 
+                    Delete Complaint
+                    </Button>
+                )}
              </div>
           </div>
         </div>

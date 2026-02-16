@@ -3,7 +3,7 @@ import { api } from '../services/mockApi.ts';
 import { Complaint, ComplaintStatus, Severity, AdminStats, DepartmentType } from '../types';
 import { Card, Button, StatusBadge } from '../components/UI.tsx';
 import { MapContainer, TileLayer, CircleMarker, useMap } from 'react-leaflet'; 
-import { List, XCircle, Clock, BarChart3, AlertCircle, CheckCircle2, HardHat, RefreshCw, Calendar, Siren, Trash2, FileCheck, History, Download, Lock, Database, LayoutGrid, Activity, Users, Flag, ThumbsUp, ChevronDown, Filter, ArrowRight, Truck } from 'lucide-react';
+import { List, XCircle, Clock, BarChart3, AlertCircle, CheckCircle2, HardHat, RefreshCw, Calendar, Siren, Trash2, FileCheck, History, Download, Lock, Database, LayoutGrid, Activity, Users, Flag, ThumbsUp, ChevronDown, Filter, ArrowRight, Truck, X, ChevronRight, Megaphone, AlertTriangle, CheckSquare, Square } from 'lucide-react';
 import { COLORS } from '../constants';
 
 // --- HELPER COMPONENTS ---
@@ -137,6 +137,7 @@ export const AdminAudit = () => {
                                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide whitespace-nowrap
                                             ${log.type === 'DELETE_CASE' ? 'bg-red-100 text-red-700' : 
                                               log.type === 'REPAIR_ORDER' ? 'bg-blue-100 text-blue-700' :
+                                              log.type === 'TRAFFIC_ALERT' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
                                               log.type === 'LOGIN' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}
                                          `}>
                                              {log.type.replace('_', ' ')}
@@ -206,6 +207,8 @@ const AdminDashboard = () => {
     
     // State for assignment menu logic
     const [showAssignMenu, setShowAssignMenu] = useState(false);
+    // Auto-Notify Traffic state (Default: True)
+    const [notifyTraffic, setNotifyTraffic] = useState(true);
 
     const fetchData = async () => {
         setIsRefreshing(true);
@@ -221,19 +224,46 @@ const AdminDashboard = () => {
     // Reset assign menu when selection changes
     useEffect(() => {
         setShowAssignMenu(false);
+        // Reset notification check to default (true) every time we open a new complaint
+        setNotifyTraffic(true);
     }, [selectedComplaint]);
 
     const handleAssignToDept = async (id: string, dept: DepartmentType) => {
+        // 1. Assign Work Order
         await api.assignComplaint(id, dept);
         await api.logAdminActivity('REPAIR_ORDER', `Assigned ticket ${id} to ${dept}`);
         
+        // 2. Conditional Traffic Notification
+        if (notifyTraffic) {
+             await api.setTrafficAlert(id, true);
+             await api.logAdminActivity('TRAFFIC_ALERT', `Auto-alert: Traffic Dept notified regarding work order ${id}`);
+        }
+        
         // Optimistic update
         const newStatus = ComplaintStatus.ASSIGNED;
-        setComplaints(prev => prev.map(c => c.id === id ? { ...c, status: newStatus, departments: [dept] } : c));
+        setComplaints(prev => prev.map(c => c.id === id ? { ...c, status: newStatus, departments: [dept], trafficAlert: notifyTraffic } : c));
         
         if (selectedComplaint?.id === id) {
-            setSelectedComplaint(prev => prev ? { ...prev, status: newStatus, departments: [dept] } : null);
+            setSelectedComplaint(prev => prev ? { ...prev, status: newStatus, departments: [dept], trafficAlert: notifyTraffic } : null);
         }
+        setShowAssignMenu(false);
+        
+        if (notifyTraffic) {
+            alert(`Work order assigned to ${dept} & Traffic Control notified automatically.`);
+        } else {
+            alert(`Work order assigned to ${dept}.`);
+        }
+    };
+
+    // Manual Notify (Standalone)
+    const handleNotifyTraffic = async (id: string) => {
+        await api.setTrafficAlert(id, true);
+        await api.logAdminActivity('TRAFFIC_ALERT', `Sent hazard notification to Traffic Dept for ticket ${id}`);
+        
+        // Optimistic update local state
+        setComplaints(prev => prev.map(c => c.id === id ? { ...c, trafficAlert: true } : c));
+        
+        alert("Traffic Department has been notified of the hazard. The ticket remains open for repair assignment.");
         setShowAssignMenu(false);
     };
 
@@ -603,31 +633,101 @@ const AdminDashboard = () => {
                                                 ) : (
                                                      // ASSIGNMENT LOGIC (For Verified Items)
                                                      showAssignMenu ? (
-                                                        <div className="space-y-2 animate-fade-in bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                                                            <div className="text-xs font-bold text-gray-500 uppercase mb-1">Select Department</div>
-                                                            <button 
-                                                                onClick={() => handleAssignToDept(selectedComplaint.id, 'Engineering')}
-                                                                className="w-full flex items-center gap-3 p-3 text-sm font-medium text-gray-700 dark:text-white hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-700 dark:hover:text-orange-300 rounded-lg transition-colors border border-gray-100 dark:border-gray-700"
-                                                            >
-                                                                <Truck size={16} /> Road & Infrastructure
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => handleAssignToDept(selectedComplaint.id, 'Ward')}
-                                                                className="w-full flex items-center gap-3 p-3 text-sm font-medium text-gray-700 dark:text-white hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-300 rounded-lg transition-colors border border-gray-100 dark:border-gray-700"
-                                                            >
-                                                                <Trash2 size={16} /> Sanitation
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => setShowAssignMenu(false)}
-                                                                className="w-full text-center text-xs text-gray-400 hover:text-gray-600 pt-1"
-                                                            >
-                                                                Cancel
-                                                            </button>
+                                                        <div className="animate-fade-in bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xl relative overflow-hidden">
+                                                            {/* Background Decoration */}
+                                                            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-rastha-primary/10 to-transparent rounded-bl-full -mr-4 -mt-4 pointer-events-none"></div>
+
+                                                            <div className="flex justify-between items-start mb-4 relative z-10">
+                                                                <div>
+                                                                    <h4 className="font-bold text-gray-900 dark:text-white text-base">Select Department</h4>
+                                                                    <p className="text-xs text-gray-500 mt-1">Dispatch work order or alert units</p>
+                                                                </div>
+                                                                <button 
+                                                                    onClick={() => setShowAssignMenu(false)} 
+                                                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                                                                >
+                                                                    <X size={18}/>
+                                                                </button>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-1 gap-2 relative z-10 max-h-[350px] overflow-y-auto">
+                                                                
+                                                                {/* NEW: Traffic Auto-Notify Toggle */}
+                                                                <div className="px-1 mb-3">
+                                                                    <label className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl cursor-pointer border border-blue-100 dark:border-blue-800 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/30">
+                                                                        <div className="relative flex items-center pt-0.5">
+                                                                            <input 
+                                                                                type="checkbox" 
+                                                                                checked={notifyTraffic}
+                                                                                onChange={(e) => setNotifyTraffic(e.target.checked)}
+                                                                                className="w-5 h-5 border-gray-300 rounded text-rastha-primary focus:ring-rastha-primary"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="flex-1">
+                                                                            <span className="block font-bold text-gray-800 dark:text-gray-100 text-sm">Notify Traffic Control</span>
+                                                                            <span className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
+                                                                                Automatically send hazard alert to Traffic Dept when assigning workers.
+                                                                            </span>
+                                                                        </div>
+                                                                        <Siren size={18} className={notifyTraffic ? "text-rastha-primary" : "text-gray-400"} />
+                                                                    </label>
+                                                                </div>
+
+                                                                {/* Repair Teams Section */}
+                                                                <div className="text-[10px] uppercase font-bold text-gray-400 mb-1 ml-1 mt-1">Dispatch Repair Team</div>
+                                                                
+                                                                <button 
+                                                                    onClick={() => handleAssignToDept(selectedComplaint.id, 'Engineering')}
+                                                                    className="group flex items-center p-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-300 text-left relative overflow-hidden"
+                                                                >
+                                                                    <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform shadow-sm">
+                                                                        <Truck size={20} />
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <span className="block font-bold text-gray-800 dark:text-gray-100 text-sm group-hover:text-orange-700 dark:group-hover:text-orange-300">Road & Infrastructure</span>
+                                                                        <span className="text-[11px] text-gray-500 dark:text-gray-400">Potholes, Resurfacing</span>
+                                                                    </div>
+                                                                    <ChevronRight size={16} className="text-gray-300 group-hover:text-orange-400 transition-colors" />
+                                                                </button>
+
+                                                                <button 
+                                                                    onClick={() => handleAssignToDept(selectedComplaint.id, 'Ward')}
+                                                                    className="group flex items-center p-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-200 dark:hover:border-green-800 transition-all duration-300 text-left relative overflow-hidden"
+                                                                >
+                                                                    <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform shadow-sm">
+                                                                        <Trash2 size={20} />
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <span className="block font-bold text-gray-800 dark:text-gray-100 text-sm group-hover:text-green-700 dark:group-hover:text-green-300">Sanitation & Ward</span>
+                                                                        <span className="text-[11px] text-gray-500 dark:text-gray-400">Debris, Cleaning</span>
+                                                                    </div>
+                                                                    <ChevronRight size={16} className="text-gray-300 group-hover:text-green-400 transition-colors" />
+                                                                </button>
+                                                                
+                                                                <div className="border-t border-gray-100 dark:border-gray-700 my-2"></div>
+
+                                                                {/* Alerts Section (Manual Only) */}
+                                                                <div className="text-[10px] uppercase font-bold text-gray-400 mb-1 ml-1">Manual Alert</div>
+
+                                                                <button 
+                                                                    onClick={() => handleNotifyTraffic(selectedComplaint.id)}
+                                                                    className="group flex items-center p-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800 transition-all duration-300 text-left relative overflow-hidden"
+                                                                >
+                                                                    <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform shadow-sm">
+                                                                        <Megaphone size={20} />
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <span className="block font-bold text-gray-800 dark:text-gray-100 text-sm group-hover:text-red-700 dark:group-hover:text-red-300">Notify Traffic Only</span>
+                                                                        <span className="text-[11px] text-gray-500 dark:text-gray-400">Alert without assigning workers.</span>
+                                                                    </div>
+                                                                    <ChevronRight size={16} className="text-gray-300 group-hover:text-red-400 transition-colors" />
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                      ) : (
                                                         <>
                                                             <Button className="w-full bg-rastha-primary text-white" onClick={() => setShowAssignMenu(true)}>
-                                                                <HardHat size={18}/> Assign Workers
+                                                                <HardHat size={18}/> Manage Ticket
                                                             </Button>
                                                             <Button variant="white" className="w-full text-xs text-red-500 hover:text-red-700 hover:bg-red-50" onClick={(e) => handleDeleteCase(selectedComplaint.id, e)}>
                                                                 <Trash2 size={14} className="mr-1" /> Delete Permanently

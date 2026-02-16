@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Button, useNavigate } from '../components/UI.tsx';
+import { Button, useNavigate, useTranslation } from '../components/UI.tsx';
 import { Camera, MapPin, UploadCloud, CheckCircle, AlertTriangle, Loader2, X, Image as ImageIcon, RotateCcw, ArrowRight, Crosshair, Navigation, Map as MapIcon, FileText } from 'lucide-react';
 import { api } from '../services/mockApi.ts';
 import { MOCK_USER } from '../constants';
@@ -75,6 +75,7 @@ const ReportDamage = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Initialize icon safely inside component to prevent module-level crashes
   const pinIcon = useMemo(() => {
@@ -113,7 +114,7 @@ const ReportDamage = () => {
           };
           
           setLocation(coords);
-          setManualAddress("GPS Location Detected");
+          setManualAddress(t('gpsDetected'));
           setStep(Step.UPLOAD);
           setIsLocating(false);
           setShowManualInput(false);
@@ -235,74 +236,82 @@ const ReportDamage = () => {
 
   // Render Steps Logic
   const steps = [
-      { id: 1, label: "Location" },
-      { id: 2, label: "Details" },
-      { id: 3, label: "Review" }
+      { id: 1, label: t('location') },
+      { id: 2, label: t('details') },
+      { id: 3, label: t('review') }
   ];
 
   return (
-    <div className="relative min-h-screen pb-20 md:pb-8 pt-6 px-4 max-w-2xl mx-auto flex flex-col">
+    <div className="relative min-h-screen pb-20 md:pb-8 pt-6 px-4 md:px-8 w-full max-w-[1920px] mx-auto flex flex-col transition-all duration-300">
       {/* Background Ambient Glow */}
       <div className="fixed top-20 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-rastha-primary/5 dark:bg-rastha-primary/10 blur-[100px] rounded-full pointer-events-none -z-10"></div>
 
       {/* Header & Stepper */}
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-display font-bold text-rastha-primary dark:text-white mb-6 tracking-tight">Report Damage</h1>
+      <div className="mb-10 text-center md:text-left max-w-4xl mx-auto w-full">
+        <h1 className="text-3xl md:text-4xl font-display font-bold text-rastha-primary dark:text-white mb-8 tracking-tight text-center md:text-left">{t('reportPageTitle')}</h1>
         
-        <div className="flex items-center justify-between relative px-2">
-            {/* Connecting Line */}
-            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-200 dark:bg-gray-700 -z-10 -translate-y-1/2 rounded"></div>
-            
-            {steps.map((s) => {
-                const isActive = step >= s.id;
-                const isCurrent = step === s.id;
-                return (
-                    <div key={s.id} className="flex flex-col items-center gap-2 bg-gray-50 dark:bg-slate-950 px-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ring-4 ring-gray-50 dark:ring-slate-950 ${
-                            isActive 
-                            ? 'bg-rastha-primary text-white scale-110 shadow-lg shadow-rastha-primary/30' 
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
-                        }`}>
-                            {isActive ? <CheckCircle size={14} /> : s.id}
+        <div className="max-w-3xl mx-auto">
+            <div className="flex items-center justify-between relative px-2 md:px-6">
+                {/* Connecting Line - Responsive Thickness */}
+                <div className="absolute top-[20px] md:top-[28px] left-0 w-full h-1 md:h-2 bg-gray-200 dark:bg-gray-700 -z-10 rounded-full"></div>
+                
+                {steps.map((s) => {
+                    const isActive = step >= s.id;
+                    const isCurrent = step === s.id;
+                    return (
+                        <div key={s.id} className="flex flex-col items-center gap-2 md:gap-4 bg-gray-50 dark:bg-slate-950 px-2 md:px-6 rounded-full">
+                            <div className={`
+                                w-10 h-10 md:w-14 md:h-14 
+                                rounded-full flex items-center justify-center 
+                                text-sm md:text-lg font-bold 
+                                transition-all duration-300 
+                                ring-[4px] md:ring-[8px] ring-gray-50 dark:ring-slate-950 
+                                ${isActive 
+                                ? 'bg-rastha-primary text-white scale-110 shadow-lg shadow-rastha-primary/30' 
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-400'}
+                            `}>
+                                {isActive ? <CheckCircle size={20} className="md:w-7 md:h-7" /> : s.id}
+                            </div>
+                            <span className={`text-[10px] md:text-sm uppercase tracking-wider font-bold transition-colors ${isCurrent ? 'text-rastha-primary dark:text-white' : 'text-gray-400'}`}>
+                                {s.label}
+                            </span>
                         </div>
-                        <span className={`text-[10px] uppercase tracking-wider font-bold transition-colors ${isCurrent ? 'text-rastha-primary dark:text-white' : 'text-gray-400'}`}>
-                            {s.label}
-                        </span>
-                    </div>
-                )
-            })}
+                    )
+                })}
+            </div>
         </div>
       </div>
 
-      {/* CONTENT AREA */}
-      <div className="flex-1 flex flex-col relative z-0">
+      {/* CONTENT AREA - Using w-full to allow map to expand */}
+      <div className="flex-1 flex flex-col relative z-0 w-full">
           
       {step === Step.LOCATION && (
-        <div className="flex-1 flex flex-col animate-fade-in">
+        <div className="flex-1 flex flex-col animate-fade-in w-full">
           {!showManualInput ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm min-h-[400px]">
+            <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm min-h-[400px] max-w-3xl mx-auto w-full">
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-full ring-1 ring-blue-100 dark:ring-blue-800">
-                    <MapPin size={48} className="text-rastha-primary dark:text-blue-400" />
+                    <MapPin size={48} className="text-rastha-primary dark:text-blue-400 md:w-16 md:h-16" />
                 </div>
-                <div className="max-w-xs">
-                    <h2 className="text-2xl font-bold mb-2 dark:text-white font-display">Where is the issue?</h2>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
-                        We need the precise location to dispatch the correct engineering team.
+                <div className="max-w-md">
+                    <h2 className="text-2xl md:text-3xl font-bold mb-3 dark:text-white font-display">{t('whereIsIssue')}</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base leading-relaxed">
+                        {t('locationDesc')}
                     </p>
                 </div>
                 
                 <div className="w-full space-y-3 max-w-sm">
-                    <Button onClick={handleGetLocation} isLoading={isLocating} className="w-full py-4 text-base shadow-xl shadow-rastha-primary/10">
-                        <Navigation size={18} /> Use Current GPS
+                    <Button onClick={handleGetLocation} isLoading={isLocating} className="w-full py-4 text-base md:text-lg shadow-xl shadow-rastha-primary/10">
+                        <Navigation size={20} /> {t('useGps')}
                     </Button>
-                    <Button onClick={() => setShowManualInput(true)} variant="white" className="w-full py-4 text-base">
-                        <MapIcon size={18} /> Pick on Map
+                    <Button onClick={() => setShowManualInput(true)} variant="white" className="w-full py-4 text-base md:text-lg">
+                        <MapIcon size={20} /> {t('pickOnMap')}
                     </Button>
                 </div>
             </div>
           ) : (
-             <div className="flex-1 flex flex-col animate-fade-in space-y-4">
-                <div className="w-full h-[500px] rounded-3xl overflow-hidden relative border border-gray-200 dark:border-slate-700 shadow-2xl shadow-gray-200/50 dark:shadow-none group bg-gray-100 dark:bg-gray-800">
+             <div className="flex-1 flex flex-col animate-fade-in space-y-4 w-full">
+                {/* LARGE MAP CONTAINER - Width reduced to 70% on desktop */}
+                <div className="w-full md:w-[70%] mx-auto h-[500px] md:h-[70vh] min-h-[600px] rounded-3xl overflow-hidden relative border border-gray-200 dark:border-slate-700 shadow-2xl shadow-gray-200/50 dark:shadow-none group bg-gray-100 dark:bg-gray-800">
                     <MapContainerAny center={[17.6599, 75.9064]} zoom={15} style={{ height: "100%", width: "100%" }}>
                         <MapRefresher />
                         <TileLayerAny url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -322,7 +331,7 @@ const ReportDamage = () => {
 
                     {/* Coordinates Box */}
                     {pinnedLocation && (
-                        <div className="absolute bottom-6 left-4 right-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 z-[500] flex justify-between items-center transition-all animate-slide-up">
+                        <div className="absolute bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 z-[500] flex justify-between md:justify-start items-center gap-4 transition-all animate-slide-up">
                             <div className="text-left overflow-hidden">
                                 <p className="text-[10px] uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-0.5">Selected Coordinates</p>
                                 <p className="text-sm font-mono font-bold text-rastha-primary dark:text-white truncate">
@@ -343,13 +352,13 @@ const ReportDamage = () => {
                     </button>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-2 max-w-2xl mx-auto w-full">
                     <Button 
                         onClick={handleManualNext} 
                         disabled={!pinnedLocation} 
                         className="w-full py-4 text-base shadow-xl"
                     >
-                        Confirm Location <ArrowRight size={18} />
+                        {t('confirmLocation')} <ArrowRight size={18} />
                     </Button>
                 </div>
              </div>
@@ -358,7 +367,7 @@ const ReportDamage = () => {
       )}
 
       {step === Step.UPLOAD && (
-        <div className="flex-1 flex flex-col space-y-6 animate-fade-in pb-10">
+        <div className="flex-1 flex flex-col space-y-6 animate-fade-in pb-10 max-w-3xl mx-auto w-full">
           
           {/* Location Summary */}
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700 p-4 rounded-2xl shadow-sm">
@@ -367,24 +376,24 @@ const ReportDamage = () => {
                     <MapPin size={18} className="text-rastha-primary dark:text-blue-400"/>
                 </div>
                 <div>
-                    <p className="text-xs text-gray-400 uppercase font-bold">Location Locked</p>
+                    <p className="text-xs text-gray-400 uppercase font-bold">{t('locationLocked')}</p>
                     <p className="font-medium dark:text-gray-200 truncate max-w-[180px] sm:max-w-xs">
                         {location ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : "GPS Position"}
                     </p>
                 </div>
              </div>
              <button onClick={() => { setStep(Step.LOCATION); setLocation(null); setShowManualInput(false); }} className="text-xs font-bold text-rastha-primary dark:text-blue-400 hover:underline px-2">
-                Edit
+                {t('edit')}
              </button>
           </div>
 
-          <div className="flex-1 bg-gray-50 dark:bg-slate-900/50 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-3xl relative overflow-hidden transition-all group hover:border-rastha-primary/50 dark:hover:border-blue-500/50 flex flex-col justify-center min-h-[250px]">
+          <div className="flex-1 bg-gray-50 dark:bg-slate-900/50 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-3xl relative overflow-hidden transition-all group hover:border-rastha-primary/50 dark:hover:border-blue-500/50 flex flex-col justify-center min-h-[300px]">
             {preview ? (
               <div className="relative w-full h-full">
                 <img src={preview} alt="Preview" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                   <button onClick={clearImage} className="bg-white/20 hover:bg-white/30 backdrop-blur-md px-6 py-3 rounded-full text-white transition-all font-medium flex items-center gap-2">
-                     <RotateCcw size={18} /> Retake
+                     <RotateCcw size={18} /> {t('retake')}
                   </button>
                 </div>
                 <button 
@@ -425,8 +434,8 @@ const ReportDamage = () => {
                     <UploadCloud size={32} className="text-gray-400 dark:text-gray-500" />
                 </div>
                 <div>
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-white">Evidence Required</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">Upload a clear photo of the road damage for AI verification.</p>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-white">{t('evidenceRequired')}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">{t('evidenceDesc')}</p>
                 </div>
                 <div className="flex flex-col w-full gap-3 max-w-xs mt-2">
                    <button 
@@ -434,14 +443,14 @@ const ReportDamage = () => {
                      className="flex items-center justify-center gap-2 bg-rastha-primary text-white py-4 px-6 rounded-2xl hover:bg-[#082F4D] transition-all shadow-lg shadow-rastha-primary/20 font-bold"
                    >
                      <Camera size={20} />
-                     Take Photo
+                     {t('takePhoto')}
                    </button>
                    <button 
                      onClick={() => fileInputRef.current?.click()}
                      className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-white py-4 px-6 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-all font-medium"
                    >
                      <ImageIcon size={20} />
-                     Upload from Gallery
+                     {t('uploadGallery')}
                    </button>
                 </div>
               </div>
@@ -458,7 +467,7 @@ const ReportDamage = () => {
           {/* Description Input */}
           <div className="space-y-3">
               <label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                  <FileText size={16} /> Describe the Issue
+                  <FileText size={16} /> {t('describeIssue')}
               </label>
               <textarea
                   value={description}
@@ -469,7 +478,7 @@ const ReportDamage = () => {
           </div>
 
           <Button onClick={handleSubmit} disabled={!image || !description.trim()} className="w-full py-4 text-base shadow-xl">
-             Start AI Analysis
+             {t('startAnalysis')}
           </Button>
         </div>
       )}
@@ -481,7 +490,7 @@ const ReportDamage = () => {
                 <Loader2 size={80} className="text-rastha-secondary animate-spin relative z-10" />
            </div>
            <div>
-             <h3 className="text-2xl font-bold text-rastha-primary dark:text-white font-display">Analyzing Surface</h3>
+             <h3 className="text-2xl font-bold text-rastha-primary dark:text-white font-display">{t('analyzing')}</h3>
              <div className="mt-6 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 px-6 py-3 rounded-full inline-block shadow-sm">
                 <p className="text-sm text-gray-600 dark:text-gray-300 font-mono transition-all duration-300 flex items-center gap-3">
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
@@ -493,7 +502,7 @@ const ReportDamage = () => {
       )}
 
       {step === Step.RESULT && aiResult && (
-        <div className="flex-1 flex flex-col space-y-6 animate-fade-in">
+        <div className="flex-1 flex flex-col space-y-6 animate-fade-in max-w-2xl mx-auto w-full">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-slate-800 text-center relative overflow-hidden">
             {/* Status Glow */}
             <div className={`absolute top-0 left-0 w-full h-2 ${aiResult.status === 'Verified' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
@@ -511,14 +520,14 @@ const ReportDamage = () => {
 
             <div className="text-left bg-gray-50 dark:bg-slate-950/50 p-5 rounded-2xl text-sm space-y-4 border border-gray-100 dark:border-slate-800">
                <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-slate-800">
-                 <span className="text-gray-500 dark:text-gray-400 font-medium">Severity Assessment</span>
+                 <span className="text-gray-500 dark:text-gray-400 font-medium">{t('severityAssessment')}</span>
                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${aiResult.severity === 'High' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-200 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>
                     {aiResult.severity}
                  </span>
                </div>
                
                <div className="flex justify-between items-start pt-1">
-                 <span className="text-gray-500 dark:text-gray-400 font-medium shrink-0">Registered Address</span>
+                 <span className="text-gray-500 dark:text-gray-400 font-medium shrink-0">{t('registeredAddress')}</span>
                  <span className="text-gray-900 dark:text-gray-200 text-right font-medium max-w-[60%] leading-snug">{aiResult.address}</span>
                </div>
             </div>
@@ -526,10 +535,10 @@ const ReportDamage = () => {
 
           <div className="space-y-3 pt-4">
             <Button onClick={() => navigate('/user/status')} variant="secondary" className="w-full py-4 text-base shadow-lg shadow-rastha-secondary/20">
-                Track Complaint Status
+                {t('trackStatus')}
             </Button>
             <Button onClick={() => { setStep(Step.LOCATION); setLocation(null); setManualAddress(""); setImage(null); setPreview(null); setDescription(""); }} variant="ghost" className="w-full py-4">
-                Report Another Issue
+                {t('reportAnother')}
             </Button>
           </div>
         </div>

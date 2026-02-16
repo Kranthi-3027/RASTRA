@@ -96,7 +96,7 @@ def detect_potholes():
         return jsonify({
             "detected": detected,
             "confidence": conf,
-            "label": f"{label} (Model 1)" if detected else "No Potholes"
+            "label": f"{label}" if detected else "No Potholes"
         })
 
     except Exception as e:
@@ -127,7 +127,7 @@ def detect_general_damage():
         return jsonify({
             "detected": detected,
             "confidence": conf,
-            "label": f"{label} (Model 2)" if detected else "No Damage"
+            "label": f"{label}" if detected else "No Damage"
         })
 
     except Exception as e:

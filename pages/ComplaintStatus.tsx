@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/mockApi.ts';
 import { MOCK_USER } from '../constants';
 import { Complaint, ComplaintStatus } from '../types';
-import { Card, StatusBadge, SeverityBadge, Button, useNavigate } from '../components/UI.tsx';
+import { Card, StatusBadge, SeverityBadge, Button, useNavigate, useTranslation } from '../components/UI.tsx';
 import { ChevronRight, X, Trash2, MapPin, Calendar, Lock } from 'lucide-react';
 
 const ComplaintStatusPage = () => {
@@ -10,6 +10,7 @@ const ComplaintStatusPage = () => {
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const fetchComplaints = async () => {
     const data = await api.getUserComplaints(MOCK_USER.id);
@@ -33,7 +34,7 @@ const ComplaintStatusPage = () => {
   }, [complaints]);
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this complaint? This action cannot be undone.')) {
+    if (window.confirm(t('confirmDelete'))) {
         setLoading(true);
         try {
             await api.deleteComplaint(id);
@@ -55,17 +56,17 @@ const ComplaintStatusPage = () => {
 
   return (
     <div className="pb-20 md:pb-8 pt-6 md:pt-8 px-4 md:px-8 max-w-7xl mx-auto">
-      <h1 className="text-2xl md:text-3xl font-bold text-rastha-primary dark:text-white mb-6">My Complaints</h1>
+      <h1 className="text-2xl md:text-3xl font-bold text-rastha-primary dark:text-white mb-6">{t('myComplaints')}</h1>
       
       {sortedComplaints.length === 0 ? (
         <div className="text-center text-gray-500 dark:text-gray-400 py-10 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-          <p>No complaints reported yet.</p>
+          <p>{t('noComplaints')}</p>
           <Button 
             variant="ghost" 
             className="mt-4 text-rastha-primary"
             onClick={() => navigate('/user/report')}
           >
-            Start a Report
+            {t('startReporting')}
           </Button>
         </div>
       ) : (
@@ -129,7 +130,7 @@ const ComplaintStatusPage = () => {
                    <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-xl flex items-start gap-3 border border-gray-100 dark:border-gray-700">
                       <MapPin size={20} className="text-rastha-primary shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Location</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">{t('location')}</p>
                         <p className="text-sm text-gray-800 dark:text-gray-200 font-medium">{selectedComplaint.address}</p>
                         <p className="text-xs text-gray-400 font-mono mt-1">
                           {selectedComplaint.latitude.toFixed(6)}, {selectedComplaint.longitude.toFixed(6)}
@@ -138,7 +139,7 @@ const ComplaintStatusPage = () => {
                    </div>
                    
                    <div>
-                      <h3 className="font-semibold mb-2 dark:text-gray-200 text-sm uppercase text-gray-500">Description</h3>
+                      <h3 className="font-semibold mb-2 dark:text-gray-200 text-sm uppercase text-gray-500">{t('description')}</h3>
                       <p className="text-gray-700 dark:text-gray-300 text-base leading-relaxed bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 rounded-xl">
                          {selectedComplaint.description || "No specific description provided."}
                       </p>
@@ -152,8 +153,8 @@ const ComplaintStatusPage = () => {
                     <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-xl border border-blue-100 dark:border-blue-800">
                         <Lock size={20} />
                         <div className="text-xs">
-                            <p className="font-bold">Deletion Locked</p>
-                            <p>Cannot delete complaint while it is being processed or repaired.</p>
+                            <p className="font-bold">{t('deleteLocked')}</p>
+                            <p>{t('deleteLockedDesc')}</p>
                         </div>
                     </div>
                 ) : (
@@ -164,7 +165,7 @@ const ComplaintStatusPage = () => {
                     isLoading={loading}
                     >
                     <Trash2 size={18} /> 
-                    Delete Complaint
+                    {t('deleteComplaint')}
                     </Button>
                 )}
              </div>

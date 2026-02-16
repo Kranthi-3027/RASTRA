@@ -1,7 +1,42 @@
 import React, { useState, useEffect, useContext, createContext } from 'react';
-import { Home, PlusCircle, User as UserIcon, Settings, MapPin, AlertTriangle, CheckCircle, Clock, BarChart3, LayoutDashboard, FileText, Users, LogOut, Menu, Shield, Database, ClipboardList } from 'lucide-react';
-import { COLORS } from '../constants';
-import { ComplaintStatus, Severity, UserRole } from '../types';
+import { Home, PlusCircle, User as UserIcon, Settings, MapPin, AlertTriangle, CheckCircle, Clock, BarChart3, LayoutDashboard, FileText, Users, LogOut, Menu, Shield, Database, ClipboardList, HardHat, Building2, Info, Siren, X } from 'lucide-react';
+import { COLORS, TRANSLATIONS } from '../constants';
+import { ComplaintStatus, Severity, UserRole, Announcement, Language } from '../types';
+
+// --- LANGUAGE CONTEXT ---
+interface LanguageContextType {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: (key: keyof typeof TRANSLATIONS.en) => string;
+}
+
+const LanguageContext = createContext<LanguageContextType>({
+  language: 'en',
+  setLanguage: () => {},
+  t: (key) => key as string,
+});
+
+export const useTranslation = () => useContext(LanguageContext);
+
+export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [language, setLanguage] = useState<Language>(() => {
+    return (localStorage.getItem('rashtra_language') as Language) || 'en';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('rashtra_language', language);
+  }, [language]);
+
+  const t = (key: keyof typeof TRANSLATIONS.en) => {
+    return TRANSLATIONS[language][key] || TRANSLATIONS['en'][key] || key;
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+};
 
 // --- CUSTOM ROUTER IMPLEMENTATION ---
 const RouterContext = createContext<{ path: string; navigate: (p: string) => void }>({ path: '/', navigate: () => {} });
@@ -33,14 +68,28 @@ export const Routes: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     const { path } = useContext(RouterContext);
     let match: React.ReactNode = null;
     
+    // Normalize path for matching (ignore query params)
+    const pathBase = path.split('?')[0];
+    
     React.Children.forEach(children, (child) => {
         if (match) return; // Already matched
         if (!React.isValidElement(child)) return;
         
         const { path: routePath, element } = child.props as { path: string; element: React.ReactNode };
         
-        // Match logic: Exact match or Wildcard
-        if (routePath === path || routePath === '*') {
+        // 1. Exact Match
+        if (routePath === pathBase) {
+             match = element;
+        }
+        // 2. Wildcard Match (parent routes)
+        else if (routePath.endsWith('/*')) {
+             const base = routePath.slice(0, -2);
+             if (pathBase.startsWith(base)) {
+                 match = element;
+             }
+        }
+        // 3. Catch-all
+        else if (routePath === '*') {
              match = element;
         }
     });
@@ -89,6 +138,35 @@ export const Navigate: React.FC<{ to: string; replace?: boolean }> = ({ to }) =>
         navigate(to);
     }, [to, navigate]);
     return null;
+};
+
+// --- ANNOUNCEMENT BANNER ---
+export const AnnouncementBanner = ({ announcement, onClose }: { announcement: Announcement | null, onClose: () => void }) => {
+  if (!announcement) return null;
+  
+  const colors = {
+    INFO: 'bg-blue-600 text-white',
+    WARNING: 'bg-orange-500 text-white',
+    CRITICAL: 'bg-red-600 text-white animate-pulse'
+  };
+  
+  const icons = {
+    INFO: <Info size={18} />,
+    WARNING: <AlertTriangle size={18} />,
+    CRITICAL: <Siren size={18} />
+  };
+
+  return (
+    <div className={`${colors[announcement.type]} px-4 py-3 shadow-md flex items-center justify-between relative z-[60]`}>
+        <div className="flex items-center gap-3 container mx-auto max-w-7xl animate-fade-in">
+            <div className="shrink-0">{icons[announcement.type]}</div>
+            <p className="font-medium text-sm md:text-base leading-snug">{announcement.message}</p>
+        </div>
+        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors ml-4 shrink-0">
+            <X size={18} />
+        </button>
+    </div>
+  );
 };
 
 // --- LOGO COMPONENT ---
@@ -245,10 +323,12 @@ export const Card: React.FC<CardProps> = ({ children, className = '', ...props }
 // --- SIDE NAV (USER) ---
 export const SideNav = ({ onLogout }: { onLogout: () => void }) => {
   const location = useLocation();
+  const { t } = useTranslation();
+  
   const navItems = [
-    { icon: <Home size={20} />, label: "Home", to: "/user/home" },
-    { icon: <PlusCircle size={20} />, label: "Report Damage", to: "/user/report" },
-    { icon: <Clock size={20} />, label: "Status Track", to: "/user/status" },
+    { icon: <Home size={20} />, label: t('home'), to: "/user/home" },
+    { icon: <PlusCircle size={20} />, label: t('report'), to: "/user/report" },
+    { icon: <Clock size={20} />, label: t('status'), to: "/user/status" },
   ];
 
   return (
@@ -278,7 +358,7 @@ export const SideNav = ({ onLogout }: { onLogout: () => void }) => {
         })}
       </nav>
 
-      {/* Bottom Section: Settings & Logout */}
+      {/* Bottom Section: Settings, About & Logout */}
       <div className="p-3 border-t border-gray-100 dark:border-slate-800 space-y-1">
          <Link
             to="/user/settings"
@@ -289,7 +369,19 @@ export const SideNav = ({ onLogout }: { onLogout: () => void }) => {
             }`}
           >
             <Settings size={20} className={location.pathname === "/user/settings" ? "text-rastha-primary dark:text-rastha-secondary" : ""} />
-            Settings
+            {t('settings')}
+          </Link>
+
+          <Link
+            to="/user/about"
+            className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+              location.pathname === "/user/about"
+                ? "bg-rastha-primary/5 text-rastha-primary dark:bg-rastha-primary/20 dark:text-white shadow-sm" 
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-gray-200"
+            }`}
+          >
+            <Info size={20} className={location.pathname === "/user/about" ? "text-rastha-primary dark:text-rastha-secondary" : ""} />
+            {t('about')}
           </Link>
 
          <button 
@@ -297,32 +389,56 @@ export const SideNav = ({ onLogout }: { onLogout: () => void }) => {
            className="flex items-center gap-3 w-full px-3 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors text-sm font-medium"
          >
              <LogOut size={20} />
-             Logout
+             {t('logout')}
          </button>
       </div>
     </aside>
   );
 };
 
-// --- SIDE NAV (ADMIN) ---
+// --- SIDE NAV (ADMIN/OFFICIAL/CONTRACTOR) ---
 export const AdminSideNav = ({ onLogout, role }: { onLogout: () => void, role?: UserRole }) => {
     const location = useLocation();
+    const isContractor = role === UserRole.CONTRACTOR;
+    const basePath = isContractor ? '/contractor' : '/admin';
     
     // Define items base
     let navItems = [
-      { icon: <LayoutDashboard size={20} />, label: "Dashboard", to: "/admin/dashboard" },
-      { icon: <Shield size={20} />, label: "Activity Audit", to: "/admin/audit" },
-      { icon: <Database size={20} />, label: "Data Center", to: "/admin/data" },
+      { icon: <LayoutDashboard size={20} />, label: "Dashboard", to: `${basePath}/dashboard` },
     ];
 
-    // Add "Work Orders" for Admin, Engineering, Ward - but NOT Traffic
-    if (role !== UserRole.TRAFFIC) {
-        // Insert after Dashboard
-        navItems.splice(1, 0, { 
-            icon: <ClipboardList size={20} />, 
-            label: "Work Orders", 
-            to: "/admin/dashboard?tab=work_orders" 
-        });
+    // SUPER ADMIN SPECIFIC ORDER
+    if (role === UserRole.ADMIN) {
+        navItems.push(
+            { icon: <Building2 size={20} />, label: "Departments", to: "/admin/departments" },
+            { icon: <HardHat size={20} />, label: "Contractors", to: "/admin/contractors" },
+            { icon: <Shield size={20} />, label: "Activity Audit", to: "/admin/audit" },
+            { icon: <Database size={20} />, label: "Data Center", to: "/admin/data" },
+        );
+    } else if (isContractor) {
+        // CONTRACTOR SPECIFIC
+        navItems.push(
+            { icon: <Shield size={20} />, label: "Activity Audit", to: `${basePath}/audit` },
+            { icon: <Database size={20} />, label: "Data Center", to: `${basePath}/data` },
+        );
+    } else {
+        // OTHER DEPARTMENTS
+        if (role === UserRole.ENGINEERING || role === UserRole.WARD_OFFICE || role === UserRole.WATER_DEPT) {
+            navItems.push(
+              { icon: <ClipboardList size={20} />, label: "Work Orders", to: "/admin/dashboard?tab=work_orders" },
+              { icon: <HardHat size={20} />, label: "Contractors", to: "/admin/contractors" } // Added access for Depts
+            );
+        }
+        
+        // TRAFFIC SPECIFIC: FORCE ROSTER
+        if (role === UserRole.TRAFFIC) {
+            navItems.push({ icon: <Users size={20} />, label: "Force Roster", to: "/department/personnel" });
+        }
+        
+        navItems.push(
+            { icon: <Shield size={20} />, label: "Activity Audit", to: "/admin/audit" },
+            { icon: <Database size={20} />, label: "Data Center", to: "/admin/data" }
+        );
     }
   
     return (
@@ -334,11 +450,11 @@ export const AdminSideNav = ({ onLogout, role }: { onLogout: () => void, role?: 
         <div className="px-6 py-6 border-b border-gray-100 dark:border-slate-800">
              <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 flex items-center gap-3 border border-gray-100 dark:border-slate-700">
                  <div className="w-8 h-8 rounded-lg bg-rastha-primary flex items-center justify-center text-white shadow-md">
-                     <Shield size={16} />
+                     {isContractor ? <HardHat size={16} /> : <Shield size={16} />}
                  </div>
                  <div>
                      <p className="text-xs font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wide">
-                        {role === UserRole.ADMIN ? "Super Admin" : "Department"}
+                        {role === UserRole.ADMIN ? "Super Admin" : role === UserRole.TRAFFIC ? "Traffic Dept" : isContractor ? "Contractor" : "Department"}
                      </p>
                      <p className="text-sm text-gray-500 dark:text-gray-400">Solapur Municipal</p>
                  </div>
@@ -347,11 +463,19 @@ export const AdminSideNav = ({ onLogout, role }: { onLogout: () => void, role?: 
 
         <nav className="flex-1 py-6 px-3 space-y-1">
           {navItems.map((item) => {
-            // Check for query param match for Work Orders
-            const isWorkOrderTab = item.to.includes('tab=work_orders') && location.pathname === '/admin/dashboard' && window.location.href.includes('tab=work_orders');
-            const isDashboard = item.to === '/admin/dashboard' && location.pathname === '/admin/dashboard' && !window.location.href.includes('tab=work_orders');
+            // Logic to highlight active tab
+            let isActive = false;
             
-            const isActive = isWorkOrderTab || isDashboard || (item.to !== '/admin/dashboard' && !item.to.includes('?') && location.pathname === item.to);
+            if (item.to.includes('?')) {
+                 isActive = location.pathname === item.to.split('?')[0] && window.location.hash.includes(item.to.split('?')[1]);
+            } else {
+                 isActive = location.pathname === item.to;
+                 
+                 // Fallback for sub-routes
+                 if (!isActive && item.to.endsWith('/dashboard')) {
+                      isActive = location.pathname.startsWith(item.to) && !window.location.hash.includes('tab=work_orders');
+                 }
+            }
 
             return (
               <Link
@@ -372,14 +496,14 @@ export const AdminSideNav = ({ onLogout, role }: { onLogout: () => void, role?: 
   
         <div className="p-3 border-t border-gray-100 dark:border-slate-800 space-y-1">
            <Link
-              to="/admin/settings"
+              to={`${basePath}/settings`}
               className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
-                location.pathname === "/admin/settings"
+                location.pathname === `${basePath}/settings`
                   ? "bg-rastha-primary/5 text-rastha-primary dark:bg-rastha-primary/20 dark:text-white shadow-sm" 
                   : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-gray-200"
               }`}
             >
-              <Settings size={20} className={location.pathname === "/admin/settings" ? "text-rastha-primary dark:text-rastha-secondary" : ""} />
+              <Settings size={20} className={location.pathname === `${basePath}/settings` ? "text-rastha-primary dark:text-rastha-secondary" : ""} />
               Settings
             </Link>
             
@@ -398,11 +522,13 @@ export const AdminSideNav = ({ onLogout, role }: { onLogout: () => void, role?: 
 // --- BOTTOM NAV (MOBILE) ---
 export const BottomNav = () => {
   const location = useLocation();
+  const { t } = useTranslation();
+  
   const navItems = [
-    { icon: <Home size={24} />, label: "Home", to: "/user/home" },
-    { icon: <PlusCircle size={24} />, label: "Report", to: "/user/report" },
-    { icon: <Clock size={24} />, label: "Status", to: "/user/status" },
-    { icon: <Settings size={24} />, label: "Settings", to: "/user/settings" },
+    { icon: <Home size={24} />, label: t('home'), to: "/user/home" },
+    { icon: <PlusCircle size={24} />, label: t('report'), to: "/user/report" },
+    { icon: <Clock size={24} />, label: t('status'), to: "/user/status" },
+    { icon: <Settings size={24} />, label: t('settings'), to: "/user/settings" },
   ];
 
   return (

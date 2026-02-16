@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Logo, useNavigate } from '../components/UI.tsx';
 import { UserRole } from '../types';
 import { api } from '../services/mockApi.ts';
-import { Shield, Truck, Siren, Trash2, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Shield, Truck, Siren, Trash2, ArrowLeft, ChevronRight, Droplets, HardHat } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (role: UserRole) => void;
@@ -34,14 +34,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     await api.logAdminActivity('LOGIN', `${role} Console Access`);
     onLogin(role);
     setLoading(false);
-    navigate('/admin/dashboard');
+    
+    if (role === UserRole.CONTRACTOR) {
+        navigate('/contractor/dashboard');
+    } else {
+        navigate('/admin/dashboard');
+    }
   };
 
   const officialRoles = [
       { id: UserRole.ADMIN, label: "Super Admin", icon: Shield, desc: "System Oversight", color: "text-blue-600 bg-blue-50" },
       { id: UserRole.ENGINEERING, label: "Road & Infrastructure", icon: Truck, desc: "Pothole & Repair Dept", color: "text-orange-600 bg-orange-50" },
+      { id: UserRole.WATER_DEPT, label: "Water Supply", icon: Droplets, desc: "Pipelines & Drainage", color: "text-blue-600 bg-blue-50" },
       { id: UserRole.TRAFFIC, label: "Traffic & Safety", icon: Siren, desc: "Signals & Hazards", color: "text-red-600 bg-red-50" },
       { id: UserRole.WARD_OFFICE, label: "Sanitation & Waste", icon: Trash2, desc: "Municipal Services", color: "text-green-600 bg-green-50" },
+      { id: UserRole.CONTRACTOR, label: "Contractor Access", icon: HardHat, desc: "Work Orders & Updates", color: "text-purple-600 bg-purple-50" },
   ];
 
   return (
@@ -98,7 +105,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </button>
               </>
           ) : (
-              <div className="w-full animate-fade-in">
+              <div className="w-full animate-fade-in text-left">
                   <div className="flex items-center gap-2 mb-6">
                       <button onClick={() => setShowOfficialRoles(false)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full text-gray-500">
                           <ArrowLeft size={20} />
@@ -106,7 +113,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                       <h2 className="font-bold text-lg text-gray-800">Select Department</h2>
                   </div>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
                       {officialRoles.map((role) => (
                           <button
                             key={role.id}

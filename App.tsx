@@ -7,132 +7,197 @@ import SettingsPage from './pages/Settings';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import HelpCentre from './pages/HelpCentre';
+import AboutPage from './pages/AboutPage';
 import AdminDashboard, { AdminAudit, AdminDataCenter } from './pages/AdminDashboard';
+import ContractorsPage from './pages/ContractorsPage'; 
 import DepartmentDashboard from './pages/DepartmentDashboard';
-import { BottomNav, SideNav, AdminSideNav, AdminMobileHeader, HashRouter as Router, Routes, Route, Navigate } from './components/UI.tsx';
+import TrafficPersonnelPage from './pages/TrafficPersonnelPage';
+import AdminDepartmentsPage from './pages/AdminDepartmentsPage'; 
+import ContractorDashboard from './pages/ContractorDashboard';
+import DataSecurity from './pages/DataSecurity';
+import CodeOfConduct from './pages/CodeOfConduct';
+import Disclaimer from './pages/Disclaimer';
+import { BottomNav, SideNav, AdminSideNav, AdminMobileHeader, HashRouter as Router, Routes, Route, Navigate, AnnouncementBanner, LanguageProvider, useTranslation } from './components/UI.tsx';
 import Chatbot from './components/Chatbot';
-import { UserRole } from './types';
-import { MOCK_ADMIN } from './constants';
+import { UserRole, Announcement } from './types';
+import { MOCK_ADMIN, MOCK_CONTRACTOR_USER } from './constants';
 import { api } from './services/mockApi.ts';
 
+// Helper for announcements
+const useAnnouncements = (role?: UserRole) => {
+    const [announcement, setAnnouncement] = useState<Announcement | null>(null);
+    
+    useEffect(() => {
+        const fetch = async () => {
+            if (!role) return;
+            const data = await api.getAnnouncements(role);
+            if (data.length > 0) {
+                setAnnouncement(data[0]); // Show the latest one
+            } else {
+                setAnnouncement(null);
+            }
+        };
+        fetch();
+        
+        // Poll for updates every 30s
+        const interval = setInterval(fetch, 30000);
+        return () => clearInterval(interval);
+    }, [role]);
+
+    return { announcement, setAnnouncement };
+};
+
 // Layouts
-const UserLayout = ({ onLogout, children }: React.PropsWithChildren<{ onLogout: () => void }>) => (
-  <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-rastha-dark dark:text-gray-100 flex transition-colors duration-300">
-    <SideNav onLogout={onLogout} />
-    <main className="flex-1 pb-20 md:pb-0 md:pl-64 min-h-screen transition-all">
-      <div className="h-full overflow-y-auto">
+const UserLayout = ({ onLogout, children }: React.PropsWithChildren<{ onLogout: () => void }>) => {
+  const { announcement, setAnnouncement } = useAnnouncements(UserRole.USER);
+
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 flex flex-col md:flex-row transition-colors duration-300">
+      <SideNav onLogout={onLogout} />
+      <div className="flex-1 flex flex-col min-w-0 md:ml-64 mb-16 md:mb-0 relative">
+        <AnnouncementBanner announcement={announcement} onClose={() => setAnnouncement(null)} />
         {children}
       </div>
-    </main>
-    <Chatbot />
-    <BottomNav />
-  </div>
-);
+      <BottomNav />
+      <Chatbot />
+    </div>
+  );
+};
 
-const AdminLayout = ({ onLogout, role, children }: React.PropsWithChildren<{ onLogout: () => void, role?: UserRole }>) => (
-  <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-rastha-dark dark:text-gray-100 flex transition-colors duration-300">
-    <AdminSideNav onLogout={onLogout} role={role} />
-    <main className="flex-1 md:pl-64 min-h-screen transition-all flex flex-col">
-       <AdminMobileHeader onLogout={onLogout} />
-       <div className="flex-1 overflow-y-auto">
-         {children}
-       </div>
-    </main>
-  </div>
-);
+const AdminLayout = ({ onLogout, role, children }: React.PropsWithChildren<{ onLogout: () => void, role: UserRole }>) => {
+    const { announcement, setAnnouncement } = useAnnouncements(role);
+    
+    return (
+        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col md:flex-row transition-colors duration-300 font-sans">
+            <AdminSideNav onLogout={onLogout} role={role} />
+            <div className="flex-1 flex flex-col min-w-0 md:ml-64 relative">
+                <AdminMobileHeader onLogout={onLogout} />
+                <AnnouncementBanner announcement={announcement} onClose={() => setAnnouncement(null)} />
+                <main className="flex-1 overflow-x-hidden">
+                    {children}
+                </main>
+            </div>
+        </div>
+    );
+};
 
 const App = () => {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
-
-  // Initialize Theme from LocalStorage on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('rashtra_theme');
-    // Default to light mode unless dark is explicitly set
-    if (savedTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      if (!savedTheme) localStorage.setItem('rashtra_theme', 'light');
-    }
-  }, []);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const handleLogin = (role: UserRole) => {
     setUserRole(role);
+    setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
-    if (userRole !== UserRole.USER) {
-        api.logAdminActivity('LOGOUT', `${userRole} Session Ended`);
-    }
     setUserRole(null);
+    setIsLoggedIn(false);
   };
 
   return (
+    <LanguageProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Public Routes */}
+          <Route path="/" element={!isLoggedIn ? <Login onLogin={handleLogin} /> : <Navigate to={userRole === UserRole.USER ? "/user/home" : userRole === UserRole.CONTRACTOR ? "/contractor/dashboard" : "/admin/dashboard"} />} />
           
-          <Route 
-            path="/login" 
-            element={
-              userRole 
-              ? <Navigate to={userRole === UserRole.USER ? "/user/home" : "/admin/dashboard"} replace /> 
-              : <Login onLogin={handleLogin} />
-            } 
-          />
-
-          {/* User Routes */}
-          <Route path="/user/home" element={
-              userRole === UserRole.USER ? <UserLayout onLogout={handleLogout}><UserHome onLogout={handleLogout} /></UserLayout> : <Navigate to="/login" replace />
-          } />
-          <Route path="/user/report" element={
-              userRole === UserRole.USER ? <UserLayout onLogout={handleLogout}><ReportDamage /></UserLayout> : <Navigate to="/login" replace />
-          } />
-          <Route path="/user/status" element={
-              userRole === UserRole.USER ? <UserLayout onLogout={handleLogout}><ComplaintStatusPage /></UserLayout> : <Navigate to="/login" replace />
-          } />
-          <Route path="/user/settings" element={
-              userRole === UserRole.USER ? <UserLayout onLogout={handleLogout}><SettingsPage onLogout={handleLogout} /></UserLayout> : <Navigate to="/login" replace />
-          } />
-          <Route path="/user/privacy" element={
-              userRole === UserRole.USER ? <UserLayout onLogout={handleLogout}><PrivacyPolicy /></UserLayout> : <Navigate to="/login" replace />
-          } />
-          <Route path="/user/terms" element={
-              userRole === UserRole.USER ? <UserLayout onLogout={handleLogout}><TermsOfService /></UserLayout> : <Navigate to="/login" replace />
-          } />
-          <Route path="/user/help" element={
-              userRole === UserRole.USER ? <UserLayout onLogout={handleLogout}><HelpCentre /></UserLayout> : <Navigate to="/login" replace />
+          {/* USER ROUTES */}
+          <Route path="/user/*" element={
+             isLoggedIn && userRole === UserRole.USER ? (
+                <UserLayout onLogout={handleLogout}>
+                   <Routes>
+                      <Route path="/user/home" element={<UserHome onLogout={handleLogout} />} />
+                      <Route path="/user/report" element={<ReportDamage />} />
+                      <Route path="/user/status" element={<ComplaintStatusPage />} />
+                      <Route path="/user/settings" element={<SettingsPage onLogout={handleLogout} />} />
+                      <Route path="/user/privacy" element={<PrivacyPolicy backPath="/user/settings" />} />
+                      <Route path="/user/terms" element={<TermsOfService />} />
+                      <Route path="/user/help" element={<HelpCentre />} />
+                      <Route path="/user/about" element={<AboutPage backPath="/user/home" />} />
+                      <Route path="*" element={<Navigate to="/user/home" />} />
+                   </Routes>
+                </UserLayout>
+             ) : <Navigate to="/" />
           } />
 
-          {/* Admin & Official Routes */}
-          <Route path="/admin/dashboard" element={
-              userRole === UserRole.ADMIN 
-                ? <AdminLayout onLogout={handleLogout} role={userRole}><AdminDashboard /></AdminLayout> 
-                : (userRole === UserRole.ENGINEERING || userRole === UserRole.TRAFFIC || userRole === UserRole.WARD_OFFICE)
-                  ? <AdminLayout onLogout={handleLogout} role={userRole}><DepartmentDashboard role={userRole} /></AdminLayout>
-                  : <Navigate to="/login" replace />
-          } />
-          
-          <Route path="/admin/audit" element={
-              (userRole === UserRole.ADMIN || userRole === UserRole.ENGINEERING || userRole === UserRole.TRAFFIC || userRole === UserRole.WARD_OFFICE)
-              ? <AdminLayout onLogout={handleLogout} role={userRole}><AdminAudit /></AdminLayout> 
-              : <Navigate to="/login" replace />
-          } />
-          <Route path="/admin/data" element={
-              (userRole === UserRole.ADMIN || userRole === UserRole.ENGINEERING || userRole === UserRole.TRAFFIC || userRole === UserRole.WARD_OFFICE)
-              ? <AdminLayout onLogout={handleLogout} role={userRole}><AdminDataCenter /></AdminLayout> 
-              : <Navigate to="/login" replace />
-          } />
-          <Route path="/admin/settings" element={
-              (userRole === UserRole.ADMIN || userRole === UserRole.ENGINEERING || userRole === UserRole.TRAFFIC || userRole === UserRole.WARD_OFFICE) 
-              ? <AdminLayout onLogout={handleLogout} role={userRole}><SettingsPage onLogout={handleLogout} user={MOCK_ADMIN} /></AdminLayout> 
-              : <Navigate to="/login" replace />
+          {/* ADMIN / DEPT ROUTES */}
+          <Route path="/admin/*" element={
+              isLoggedIn && userRole !== UserRole.USER && userRole !== UserRole.CONTRACTOR ? (
+                  <AdminLayout onLogout={handleLogout} role={userRole!}>
+                      <Routes>
+                          <Route path="/admin/dashboard" element={
+                              userRole === UserRole.ADMIN ? <AdminDashboard /> : <DepartmentDashboard role={userRole!} />
+                          } />
+                          
+                          {/* Super Admin Specific */}
+                          {userRole === UserRole.ADMIN && (
+                              <Route path="/admin/departments" element={<AdminDepartmentsPage />} />
+                          )}
+
+                          {/* Shared Routes for Admin + Depts */}
+                          <Route path="/admin/audit" element={<AdminAudit />} />
+                          <Route path="/admin/data" element={<AdminDataCenter />} />
+                          <Route path="/admin/contractors" element={<ContractorsPage role={userRole!} />} />
+                          <Route path="/admin/settings" element={<SettingsPage onLogout={handleLogout} user={{...MOCK_ADMIN, role: userRole!}} />} />
+                          
+                          {/* Support Pages for Admin/Dept */}
+                          <Route path="/admin/about" element={<AboutPage backPath="/admin/settings" />} />
+                          <Route path="/admin/privacy" element={<PrivacyPolicy variant="official" backPath="/admin/settings" />} />
+                          <Route path="/admin/security" element={<DataSecurity backPath="/admin/settings" />} />
+                          <Route path="/admin/conduct" element={<CodeOfConduct backPath="/admin/settings" />} />
+                          <Route path="/admin/disclaimer" element={<Disclaimer backPath="/admin/settings" />} />
+
+                          <Route path="*" element={<Navigate to="/admin/dashboard" />} />
+                      </Routes>
+                  </AdminLayout>
+              ) : <Navigate to="/" />
           } />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+           {/* TRAFFIC DEPT SPECIFIC */}
+           <Route path="/department/*" element={
+              isLoggedIn && userRole === UserRole.TRAFFIC ? (
+                <AdminLayout onLogout={handleLogout} role={UserRole.TRAFFIC}>
+                    <Routes>
+                        <Route path="/department/personnel" element={<TrafficPersonnelPage />} />
+                        <Route path="*" element={<Navigate to="/admin/dashboard" />} />
+                    </Routes>
+                </AdminLayout>
+              ) : <Navigate to="/" />
+           } />
+
+           {/* CONTRACTOR ROUTES */}
+           <Route path="/contractor/*" element={
+               isLoggedIn && userRole === UserRole.CONTRACTOR ? (
+                   <AdminLayout onLogout={handleLogout} role={UserRole.CONTRACTOR}>
+                       <Routes>
+                           <Route path="/contractor/dashboard" element={<ContractorDashboard />} />
+                           
+                           {/* Add Audit and Data Center for Contractors */}
+                           <Route path="/contractor/audit" element={<AdminAudit />} />
+                           <Route path="/contractor/data" element={<AdminDataCenter />} />
+                           
+                           <Route path="/contractor/settings" element={<SettingsPage onLogout={handleLogout} user={MOCK_CONTRACTOR_USER} />} />
+                           
+                           {/* Support Pages for Contractors */}
+                           <Route path="/contractor/about" element={<AboutPage backPath="/contractor/settings" />} />
+                           <Route path="/contractor/privacy" element={<PrivacyPolicy variant="official" backPath="/contractor/settings" />} />
+                           <Route path="/contractor/security" element={<DataSecurity backPath="/contractor/settings" />} />
+                           <Route path="/contractor/conduct" element={<CodeOfConduct backPath="/contractor/settings" />} />
+                           <Route path="/contractor/disclaimer" element={<Disclaimer backPath="/contractor/settings" />} />
+
+                           <Route path="*" element={<Navigate to="/contractor/dashboard" />} />
+                       </Routes>
+                   </AdminLayout>
+               ) : <Navigate to="/" />
+           } />
+
+           {/* Catch all for 404 */}
+           <Route path="*" element={<Navigate to="/" />} />
+
         </Routes>
       </Router>
+    </LanguageProvider>
   );
 };
 

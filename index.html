@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="RASHTRA - Official Smart Road Damage Reporting System by Solapur Municipal Corporation, Government of Maharashtra" />
+    <meta name="theme-color" content="#0A3D62" />
+    <title>RASHTRA | Smart Road Reporting — Solapur Municipal Corporation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Government-appropriate typefaces: Noto Serif for authority, Source Sans Pro for clarity -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script>
+      // TAILWIND CONFIGURATION
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              gray: {
+                50: '#f8fafc',
+                100: '#f1f5f9',
+                200: '#e2e8f0',
+                300: '#cbd5e1',
+                400: '#94a3b8',
+                500: '#64748b',
+                600: '#475569',
+                700: '#334155',
+                800: '#1e293b',
+                900: '#0f172a',
+                950: '#020617',
+              },
+              rastha: {
+                primary: '#0A3D62',      // Government navy
+                secondary: '#D4A017',    // Saffron-gold (replaces startup teal)
+                alert: '#C0392B',        // Official alert red
+                warning: '#E67E22',      // Amber warning
+                dark: '#020617',
+                surface: '#0f172a',
+                highlight: '#1e293b',
+                govgold: '#D4A017',      // Official saffron gold
+                govgreen: '#138808',     // India green (tricolour)
+              }
+            },
+            fontFamily: {
+              sans: ['"Source Sans 3"', 'sans-serif'],
+              display: ['"Noto Serif"', 'serif'],
+              mono: ['"Source Code Pro"', 'monospace'],
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideUp: {
+                '0%': { transform: 'translateY(100%)' },
+                '100%': { transform: 'translateY(0)' },
+              }
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.3s ease-out',
+              'slide-up': 'slideUp 0.3s ease-out',
+              'bounce-slow': 'bounce 3s infinite',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        font-family: '"Source Sans 3"', sans-serif;
+        background-color: #f8fafc;
+        transition: background-color 0.3s ease;
+      }
+      .dark body {
+        background-color: #020617;
+      }
+      h1, h2, h3, h4 {
+        font-family: 'Noto Serif', serif;
+      }
+      
+      /* === GOVERNMENT IDENTITY STRIPE === */
+      .gov-tricolour-stripe {
+        background: linear-gradient(to right, #FF9933 33.33%, #FFFFFF 33.33%, #FFFFFF 66.66%, #138808 66.66%);
+        height: 4px;
+      }
+      
+      /* === OFFICIAL WATERMARK === */
+      .gov-watermark {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='%230A3D62' stroke-width='1' opacity='0.05'/%3E%3Ccircle cx='50' cy='50' r='30' fill='none' stroke='%230A3D62' stroke-width='0.5' opacity='0.05'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 200px;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      
+      /* Glassmorphism Utilities */
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+      .dark .glass-panel {
+        background: rgba(15, 23, 42, 0.7); /* Slate 900 with opacity */
+        border-color: rgba(255, 255, 255, 0.05);
+      }
+
+      /* Fix for Leaflet in dark mode */
+      .leaflet-container {
+        background: #f1f5f9;
+      }
+      .dark .leaflet-container {
+        background: #0f172a;
+      }
+      /* Dark mode map inversion filter */
+      .dark .leaflet-layer,
+      .dark .leaflet-control-zoom-in,
+      .dark .leaflet-control-zoom-out,
+      .dark .leaflet-control-attribution {
+        filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+      }
+      
+      /* Smooth Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1; 
+        border-radius: 4px;
+      }
+      .dark ::-webkit-scrollbar-thumb {
+        background: #334155; 
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8; 
+      }
+    </style>
+
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "RASHTRA - Smart Road Reporting",
+  "description": "AI-powered road damage reporting system enabling citizens to report potholes and authorities to manage repairs efficiently.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}

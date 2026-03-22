@@ -129,7 +129,7 @@ npm install
 
 # Configure environment
 cp .env.local.example .env.local
-# Fill in your Firebase + Gemini keys
+# Fill in your Firebase credentials + Gemini keys
 
 # Run dev server
 npm run dev

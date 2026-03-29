@@ -20,8 +20,6 @@ Built for a large-scale civic hackathon (~2,000 competing teams), RASHTRA is des
 | Framework | React + TypeScript + Vite |
 | Auth | Firebase Authentication (Email/Password + Google Sign-In) |
 | AI Chat | Gemini AI (English / Hindi / Marathi) |
-| Image Verification | Firebase Storage + Gemini Vision |
-| Data Layer | Firestore (Firebase) |
 | Hosting | Firebase Hosting |
 
 ### Backend (Production-Grade Stack)

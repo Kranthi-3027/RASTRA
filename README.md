@@ -8,7 +8,7 @@
 
 **RASHTRA** is a full-stack civic tech platform that enables citizens to report road damage, and empowers municipal departments, contractors, and administrators to manage, verify, and resolve complaints — end to end.
 
-Built for a large-scale civic hackathon (~2,000 competing teams), RASHTRA is designed to production-grade standards: real backend persistence, AI-powered verification, role-based access control, and multi-language support.
+Built for a large-scale civic hackathon (~140 competing teams), RASHTRA is designed to production-grade standards: real backend persistence, AI-powered verification, role-based access control, and multi-language support.
 
 ---
 
@@ -114,6 +114,9 @@ rashtra_smc/
 ### Prerequisites
 - Node.js 20+
 - Gemini API key
+- Firebase console project
+- Railway for Running (DB + Backend server.py)
+- Hugging face spaces
 
 ### Setup
 
